@@ -341,6 +341,30 @@ Store all reports by property for historical tracking.
 
 ---
 
+## Folder Structure
+
+```
+Cabin Care/
+  01 Daily Logs/       Session handoff notes
+  client/              Vite + React frontend (deploys to Vercel)
+    src/
+      components/      Reusable UI components (properties/, orders/)
+      layouts/         CustomerLayout (sidebar + appbar)
+      lib/             theme.ts, shared utilities
+      pages/           DashboardPage, PropertiesPage, OrdersPage, NewInspectionPage, HistoryPage
+      trpc/            tRPC client setup with Clerk auth token
+  server/              Express + tRPC backend (deploys to Railway)
+    prisma/            schema.prisma, migrations/, seed.ts
+    src/
+      lib/             context.ts (Clerk auth), prisma.ts, trpc.ts
+      middleware/      clerkWebhook.ts
+      routers/         index.ts, users, properties, checklists, orders, jobs
+  CLAUDE.md            Project context and standards
+  package.json         Monorepo root (npm workspaces)
+```
+
+---
+
 ## Deferred Tasks
 
 * **Clerk production instance** — When going live, create a Clerk production instance, add the Vercel domain to Allowed Origins, update `VITE_CLERK_PUBLISHABLE_KEY` (Vercel) and `CLERK_SECRET_KEY` + `CLERK_WEBHOOK_SECRET` (Railway) with production keys.
