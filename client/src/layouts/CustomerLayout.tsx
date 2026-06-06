@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useClerk, useUser } from '@clerk/clerk-react'
 import {
@@ -74,6 +74,17 @@ export default function CustomerLayout() {
   const { data: dbUser } = trpc.users.me.useQuery()
   const role = dbUser?.role ?? 'customer'
   const navItems = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.customer
+
+  const upsertFromClerk = trpc.users.upsertFromClerk.useMutation()
+  useEffect(() => {
+    if (user?.primaryEmailAddress?.emailAddress && user?.fullName) {
+      upsertFromClerk.mutate({
+        name: user.fullName,
+        email: user.primaryEmailAddress.emailAddress,
+        phone: user.primaryPhoneNumber?.phoneNumber,
+      })
+    }
+  }, [user?.id])
 
   const handleDrawerToggle = () => setMobileOpen((prev) => !prev)
   const handleAvatarClick = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget)
