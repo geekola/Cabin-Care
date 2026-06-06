@@ -4,6 +4,7 @@ import CustomerLayout from '@/layouts/CustomerLayout'
 import DashboardPage from '@/pages/DashboardPage'
 import PropertiesPage from '@/pages/PropertiesPage'
 import OrdersPage from '@/pages/OrdersPage'
+import NewInspectionPage from '@/pages/NewInspectionPage'
 import HistoryPage from '@/pages/HistoryPage'
 
 function ProtectedRoutes() {
@@ -15,6 +16,7 @@ function ProtectedRoutes() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/properties" element={<PropertiesPage />} />
             <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/orders/new" element={<NewInspectionPage />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
