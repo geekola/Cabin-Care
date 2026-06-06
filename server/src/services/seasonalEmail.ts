@@ -31,10 +31,10 @@ interface SeasonalContent {
 const SEASONAL_CONTENT: Record<Season, SeasonalContent> = {
   spring: {
     subject: 'Spring Property Care Tips from Cabin Care',
-    preheader: 'Time to shake off winter — here's your spring checklist.',
+    preheader: "Time to shake off winter — here's your spring checklist.",
     headline: 'Spring Is Here — Time for a Post-Winter Walkthrough',
     intro:
-      'Winter can be hard on properties. Now that the snow has cleared, it's the perfect time to assess any damage and get your cabin ready for the busy season ahead.',
+      "Winter can be hard on properties. Now that the snow has cleared, it's the perfect time to assess any damage and get your cabin ready for the busy season ahead.",
     tips: [
       {
         title: 'Inspect the Roof & Gutters',
