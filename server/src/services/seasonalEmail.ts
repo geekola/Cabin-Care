@@ -66,7 +66,7 @@ const SEASONAL_CONTENT: Record<Season, SeasonalContent> = {
     preheader: 'Keep your cabin cool, safe, and guest-ready all summer.',
     headline: 'Summer Checklist — Keep Your Property at Its Best',
     intro:
-      'Summer brings higher occupancy, hotter temperatures, and increased wear. Here's what to stay on top of to keep your cabin comfortable and protected.',
+      "Summer brings higher occupancy, hotter temperatures, and increased wear. Here's what to stay on top of to keep your cabin comfortable and protected.",
     tips: [
       {
         title: 'Monitor HVAC Performance',
@@ -78,7 +78,7 @@ const SEASONAL_CONTENT: Record<Season, SeasonalContent> = {
       },
       {
         title: 'Wildfire Preparedness (if applicable)',
-        body: 'Clear dry brush and debris within 30 feet of the structure. Confirm you have an updated defensible-space plan if you're in a fire-prone area.',
+        body: "Clear dry brush and debris within 30 feet of the structure. Confirm you have an updated defensible-space plan if you're in a fire-prone area.",
       },
       {
         title: 'Pest & Bug Control',
@@ -138,7 +138,7 @@ const SEASONAL_CONTENT: Record<Season, SeasonalContent> = {
       },
       {
         title: 'Monitor Remotely',
-        body: 'Consider a smart thermostat or water leak sensor if you don't already have one. Remote monitoring gives you early warning on temperature drops or leaks.',
+        body: "Consider a smart thermostat or water leak sensor if you don't already have one. Remote monitoring gives you early warning on temperature drops or leaks.",
       },
       {
         title: 'Snow & Ice Management',
