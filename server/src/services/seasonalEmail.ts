@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma'
-import { resend, FROM_ADDRESS } from '../lib/resend'
+import { getResend, FROM_ADDRESS } from '../lib/resend'
 
 // ---------------------------------------------------------------------------
 // Season detection
@@ -281,7 +281,7 @@ export async function sendSeasonalEmails(): Promise<{ sent: number; failed: numb
 
   for (const owner of owners) {
     try {
-      await resend.emails.send({
+      await getResend().emails.send({
         from: FROM_ADDRESS,
         to: owner.email,
         subject: content.subject,
