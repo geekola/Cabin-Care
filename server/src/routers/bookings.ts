@@ -2,12 +2,12 @@ import { z } from 'zod'
 import { router, protectedProcedure } from '../lib/trpc'
 import { prisma } from '../lib/prisma'
 
-export const ordersRouter = router({
+export const bookingsRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
     const user = await prisma.user.findUniqueOrThrow({ where: { clerkId: ctx.auth.userId } })
-    return prisma.order.findMany({
+    return prisma.booking.findMany({
       where: { customerId: user.id },
-      include: { property: true, orderChecklists: { include: { checklist: true } } },
+      include: { property: true, bookingChecklists: { include: { checklist: true } } },
       orderBy: { createdAt: 'desc' },
     })
   }),
@@ -29,7 +29,7 @@ export const ordersRouter = router({
       })
       const totalPrice = checklists.reduce((sum, c) => sum + c.basePrice, 0)
 
-      return prisma.order.create({
+      return prisma.booking.create({
         data: {
           customerId: user.id,
           propertyId: input.propertyId,
@@ -38,11 +38,11 @@ export const ordersRouter = router({
           status: 'pending',
           scheduledDate: new Date(input.scheduledDate),
           backupDate: input.backupDate ? new Date(input.backupDate) : null,
-          orderChecklists: {
+          bookingChecklists: {
             create: checklists.map((c) => ({ checklistId: c.id, price: c.basePrice })),
           },
         },
-        include: { orderChecklists: true },
+        include: { bookingChecklists: true },
       })
     }),
 })

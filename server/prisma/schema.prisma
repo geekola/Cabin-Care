@@ -39,7 +39,7 @@ enum PaymentStatus {
   failed
 }
 
-enum OrderStatus {
+enum BookingStatus {
   pending
   confirmed
   assigned
@@ -48,7 +48,7 @@ enum OrderStatus {
   cancelled
 }
 
-enum JobStatus {
+enum AssignmentStatus {
   pending
   in_progress
   completed
@@ -84,9 +84,9 @@ model User {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
-  properties Property[]
-  orders     Order[]
-  jobs       Job[]      @relation("AssignedStaff")
+  properties  Property[]
+  bookings    Booking[]
+  assignments Assignment[] @relation("AssignedStaff")
 
   @@map("users")
 }
@@ -102,8 +102,8 @@ model Property {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  owner  User    @relation(fields: [ownerId], references: [id])
-  orders Order[]
+  owner    User      @relation(fields: [ownerId], references: [id])
+  bookings Booking[]
 
   @@map("properties")
 }
@@ -118,8 +118,8 @@ model Checklist {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  items           ChecklistItem[]
-  orderChecklists OrderChecklist[]
+  items             ChecklistItem[]
+  bookingChecklists BookingChecklist[]
 
   @@map("checklists")
 }
@@ -134,95 +134,95 @@ model ChecklistItem {
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
 
-  checklist  Checklist   @relation(fields: [checklistId], references: [id], onDelete: Cascade)
-  jobResults JobResult[]
+  checklist         Checklist          @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  assignmentResults AssignmentResult[]
 
   @@map("checklist_items")
 }
 
-model Order {
+model Booking {
   id            String        @id @default(cuid())
   customerId    String
   propertyId    String
   totalPrice    Float
   paymentStatus PaymentStatus @default(pending)
-  status        OrderStatus   @default(pending)
+  status        BookingStatus @default(pending)
   scheduledDate DateTime
   backupDate    DateTime?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  customer        User             @relation(fields: [customerId], references: [id])
-  property        Property         @relation(fields: [propertyId], references: [id])
-  orderChecklists OrderChecklist[]
-  jobs            Job[]
+  customer          User               @relation(fields: [customerId], references: [id])
+  property          Property           @relation(fields: [propertyId], references: [id])
+  bookingChecklists BookingChecklist[]
+  assignments       Assignment[]
 
-  @@map("orders")
+  @@map("bookings")
 }
 
-model OrderChecklist {
+model BookingChecklist {
   id          String @id @default(cuid())
-  orderId     String
+  bookingId   String
   checklistId String
   price       Float
 
-  order     Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  booking   Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   checklist Checklist @relation(fields: [checklistId], references: [id])
 
-  @@map("order_checklists")
+  @@map("booking_checklists")
 }
 
-model Job {
-  id              String    @id @default(cuid())
-  orderId         String
-  assignedStaffId String?
-  status          JobStatus @default(pending)
-  startedAt       DateTime?
-  completedAt     DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+model Assignment {
+  id                String           @id @default(cuid())
+  bookingId         String
+  assignedStaffId   String?
+  status            AssignmentStatus @default(pending)
+  startedAt         DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
-  order        Order        @relation(fields: [orderId], references: [id])
-  assignedStaff User?       @relation("AssignedStaff", fields: [assignedStaffId], references: [id])
-  results      JobResult[]
-  photos       JobPhoto[]
-  repairItems  RepairItem[]
+  booking       Booking           @relation(fields: [bookingId], references: [id])
+  assignedStaff User?             @relation("AssignedStaff", fields: [assignedStaffId], references: [id])
+  results       AssignmentResult[]
+  photos        AssignmentPhoto[]
+  repairItems   RepairItem[]
 
-  @@map("jobs")
+  @@map("assignments")
 }
 
-model JobResult {
+model AssignmentResult {
   id              String   @id @default(cuid())
-  jobId           String
+  assignmentId    String
   checklistItemId String
   resultValue     String
   notes           String?
   createdAt       DateTime @default(now())
 
-  job           Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  assignment    Assignment    @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   checklistItem ChecklistItem @relation(fields: [checklistItemId], references: [id])
-  photos        JobPhoto[]
+  photos        AssignmentPhoto[]
 
-  @@unique([jobId, checklistItemId])
-  @@map("job_results")
+  @@unique([assignmentId, checklistItemId])
+  @@map("assignment_results")
 }
 
-model JobPhoto {
-  id          String   @id @default(cuid())
-  jobId       String
-  jobResultId String?
-  photoUrl    String
-  createdAt   DateTime @default(now())
+model AssignmentPhoto {
+  id                 String   @id @default(cuid())
+  assignmentId       String
+  assignmentResultId String?
+  photoUrl           String
+  createdAt          DateTime @default(now())
 
-  job       Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  jobResult JobResult? @relation(fields: [jobResultId], references: [id])
+  assignment       Assignment        @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  assignmentResult AssignmentResult? @relation(fields: [assignmentResultId], references: [id])
 
-  @@map("job_photos")
+  @@map("assignment_photos")
 }
 
 model RepairItem {
   id               String       @id @default(cuid())
-  jobId            String
+  assignmentId     String
   title            String
   description      String?
   estimatedHours   Float?
@@ -234,8 +234,8 @@ model RepairItem {
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
-  job       Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  workOrder WorkOrder?
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  workOrder  WorkOrder?
 
   @@map("repair_items")
 }

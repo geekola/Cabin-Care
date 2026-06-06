@@ -25,18 +25,41 @@ import MenuIcon from '@mui/icons-material/Menu'
 import DashboardIcon from '@mui/icons-material/Dashboard'
 import HomeWorkIcon from '@mui/icons-material/HomeWork'
 import AssignmentIcon from '@mui/icons-material/Assignment'
+import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn'
+import BuildIcon from '@mui/icons-material/Build'
+import EngineeringIcon from '@mui/icons-material/Engineering'
+import PeopleIcon from '@mui/icons-material/People'
 import HistoryIcon from '@mui/icons-material/History'
 import LogoutIcon from '@mui/icons-material/Logout'
 import AccountCircleIcon from '@mui/icons-material/AccountCircle'
+import { trpc } from '@/trpc/client'
 
 const DRAWER_WIDTH = 240
 
-const navItems = [
-  { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
-  { label: 'Properties', path: '/properties', icon: <HomeWorkIcon /> },
-  { label: 'Orders', path: '/orders', icon: <AssignmentIcon /> },
-  { label: 'History', path: '/history', icon: <HistoryIcon /> },
-]
+type NavItem = { label: string; path: string; icon: React.ReactNode }
+
+const NAV_BY_ROLE: Record<string, NavItem[]> = {
+  customer: [
+    { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
+    { label: 'Properties', path: '/properties', icon: <HomeWorkIcon /> },
+    { label: 'Bookings', path: '/bookings', icon: <AssignmentIcon /> },
+    { label: 'Repairs', path: '/repairs', icon: <BuildIcon /> },
+    { label: 'History', path: '/history', icon: <HistoryIcon /> },
+  ],
+  staff: [
+    { label: 'My Assignments', path: '/my-assignments', icon: <AssignmentTurnedInIcon /> },
+  ],
+  admin: [
+    { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
+    { label: 'Bookings', path: '/bookings', icon: <AssignmentIcon /> },
+    { label: 'Repairs', path: '/repairs', icon: <BuildIcon /> },
+    { label: 'Work Orders', path: '/work-orders', icon: <EngineeringIcon /> },
+    { label: 'Staff', path: '/staff', icon: <PeopleIcon /> },
+  ],
+  repair_tech: [
+    { label: 'My Work Orders', path: '/my-work-orders', icon: <EngineeringIcon /> },
+  ],
+}
 
 export default function CustomerLayout() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -47,6 +70,10 @@ export default function CustomerLayout() {
   const location = useLocation()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+
+  const { data: dbUser } = trpc.users.me.useQuery()
+  const role = dbUser?.role ?? 'customer'
+  const navItems = NAV_BY_ROLE[role] ?? NAV_BY_ROLE.customer
 
   const handleDrawerToggle = () => setMobileOpen((prev) => !prev)
   const handleAvatarClick = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget)

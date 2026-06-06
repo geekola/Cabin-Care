@@ -15,6 +15,7 @@ interface ClerkUserPayload {
   primary_email_address_id: string
   phone_numbers: Array<{ phone_number: string; id: string }>
   primary_phone_number_id: string | null
+  public_metadata: { role?: string } | null
 }
 
 interface ClerkWebhookEvent {
@@ -75,13 +76,19 @@ export async function clerkWebhookHandler(req: Request, res: Response) {
 
   try {
     if (type === 'user.created') {
+      const metaRole = data.public_metadata?.role
+      const role =
+        metaRole === 'staff' || metaRole === 'repair_tech' || metaRole === 'admin'
+          ? metaRole
+          : 'customer'
+
       await prisma.user.create({
         data: {
           clerkId: data.id,
           name: getFullName(data),
           email: getPrimaryEmail(data),
           phone: getPrimaryPhone(data),
-          role: 'customer',
+          role,
           status: 'active',
         },
       })
