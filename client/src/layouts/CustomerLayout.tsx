@@ -170,6 +170,8 @@ export default function CustomerLayout() {
         variant="permanent"
         sx={{
           display: { xs: 'none', md: 'block' },
+          width: DRAWER_WIDTH,
+          flexShrink: 0,
           '& .MuiDrawer-paper': { width: DRAWER_WIDTH, boxSizing: 'border-box' },
         }}
         open
@@ -183,7 +185,7 @@ export default function CustomerLayout() {
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
+          minWidth: 0,
           minHeight: '100vh',
           bgcolor: 'grey.50',
         }}
