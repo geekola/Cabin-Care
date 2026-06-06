@@ -338,3 +338,9 @@ Store all reports by property for historical tracking.
 * Comprehensive error handling
 * Audit logging for critical actions
 * Production-ready code only
+
+---
+
+## Deferred Tasks
+
+* **Clerk production instance** — When going live, create a Clerk production instance, add the Vercel domain to Allowed Origins, update `VITE_CLERK_PUBLISHABLE_KEY` (Vercel) and `CLERK_SECRET_KEY` + `CLERK_WEBHOOK_SECRET` (Railway) with production keys.
