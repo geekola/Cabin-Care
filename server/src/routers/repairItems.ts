@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { router, protectedProcedure } from '../lib/trpc'
 import { prisma } from '../lib/prisma'
 import { TRPCError } from '@trpc/server'
+import { getDbUser, requireDbUser } from '../lib/getDbUser'
 
 export const repairItemsRouter = router({
   // Staff: flag a repair on an assignment
@@ -34,7 +35,8 @@ export const repairItemsRouter = router({
 
   // Customer: list all pending repair items across their properties
   listForOwner: protectedProcedure.query(async ({ ctx }) => {
-    const user = await prisma.user.findUniqueOrThrow({ where: { clerkId: ctx.auth.userId } })
+    const user = await getDbUser(ctx.auth.userId)
+    if (!user) return []
     return prisma.repairItem.findMany({
       where: {
         assignment: {
@@ -57,7 +59,7 @@ export const repairItemsRouter = router({
   approve: protectedProcedure
     .input(z.object({ repairItemId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const user = await prisma.user.findUniqueOrThrow({ where: { clerkId: ctx.auth.userId } })
+      const user = await requireDbUser(ctx.auth.userId)
       const repairItem = await prisma.repairItem.findUnique({
         where: { id: input.repairItemId },
         include: { assignment: { include: { booking: { include: { property: true } } } } },
@@ -75,7 +77,7 @@ export const repairItemsRouter = router({
   decline: protectedProcedure
     .input(z.object({ repairItemId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const user = await prisma.user.findUniqueOrThrow({ where: { clerkId: ctx.auth.userId } })
+      const user = await requireDbUser(ctx.auth.userId)
       const repairItem = await prisma.repairItem.findUnique({
         where: { id: input.repairItemId },
         include: { assignment: { include: { booking: { include: { property: true } } } } },

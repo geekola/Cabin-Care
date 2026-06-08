@@ -2,15 +2,17 @@ import { z } from 'zod'
 import { router, protectedProcedure } from '../lib/trpc'
 import { prisma } from '../lib/prisma'
 import { TRPCError } from '@trpc/server'
+import { getDbUser, requireDbUser } from '../lib/getDbUser'
 
 export const propertiesRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
-    const user = await prisma.user.findUniqueOrThrow({ where: { clerkId: ctx.auth.userId } })
+    const user = await getDbUser(ctx.auth.userId)
+    if (!user) return []
     return prisma.property.findMany({ where: { ownerId: user.id } })
   }),
 
   byId: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
-    const user = await prisma.user.findUniqueOrThrow({ where: { clerkId: ctx.auth.userId } })
+    const user = await requireDbUser(ctx.auth.userId)
     const property = await prisma.property.findUnique({ where: { id: input.id } })
     if (!property || property.ownerId !== user.id) {
       throw new TRPCError({ code: 'NOT_FOUND' })
@@ -29,7 +31,7 @@ export const propertiesRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const user = await prisma.user.findUniqueOrThrow({ where: { clerkId: ctx.auth.userId } })
+      const user = await requireDbUser(ctx.auth.userId)
       return prisma.property.create({
         data: { ...input, ownerId: user.id },
       })
@@ -47,7 +49,7 @@ export const propertiesRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const user = await prisma.user.findUniqueOrThrow({ where: { clerkId: ctx.auth.userId } })
+      const user = await requireDbUser(ctx.auth.userId)
       const { id, ...data } = input
       const existing = await prisma.property.findUnique({ where: { id } })
       if (!existing || existing.ownerId !== user.id) {
@@ -59,7 +61,7 @@ export const propertiesRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const user = await prisma.user.findUniqueOrThrow({ where: { clerkId: ctx.auth.userId } })
+      const user = await requireDbUser(ctx.auth.userId)
       const existing = await prisma.property.findUnique({ where: { id: input.id } })
       if (!existing || existing.ownerId !== user.id) {
         throw new TRPCError({ code: 'NOT_FOUND' })

@@ -97,12 +97,12 @@ export default function CustomerLayout() {
 
   const drawer = (
     <Box>
-      <Toolbar sx={{ px: 2 }}>
+      <Toolbar sx={{ px: 2, justifyContent: 'center' }}>
         <Box
           component="img"
           src={theme.palette.mode === 'dark' ? '/images/logo-dark.png' : '/images/logo-light.png'}
           alt="Cabin Care"
-          sx={{ height: 40, width: 'auto' }}
+          sx={{ maxWidth: 160, width: '100%', height: 'auto' }}
         />
       </Toolbar>
       <Divider />

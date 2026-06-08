@@ -1,10 +1,12 @@
 import { z } from 'zod'
 import { router, protectedProcedure } from '../lib/trpc'
 import { prisma } from '../lib/prisma'
+import { getDbUser, requireDbUser } from '../lib/getDbUser'
 
 export const bookingsRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
-    const user = await prisma.user.findUniqueOrThrow({ where: { clerkId: ctx.auth.userId } })
+    const user = await getDbUser(ctx.auth.userId)
+    if (!user) return []
     return prisma.booking.findMany({
       where: { customerId: user.id },
       include: { property: true, bookingChecklists: { include: { checklist: true } } },
@@ -22,7 +24,7 @@ export const bookingsRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const user = await prisma.user.findUniqueOrThrow({ where: { clerkId: ctx.auth.userId } })
+      const user = await requireDbUser(ctx.auth.userId)
 
       const checklists = await prisma.checklist.findMany({
         where: { id: { in: input.checklistIds } },
