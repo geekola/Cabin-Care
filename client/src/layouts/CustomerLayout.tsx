@@ -22,6 +22,8 @@ import {
   useMediaQuery,
 } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
+import DarkModeIcon from '@mui/icons-material/DarkMode'
+import LightModeIcon from '@mui/icons-material/LightMode'
 import DashboardIcon from '@mui/icons-material/Dashboard'
 import HomeWorkIcon from '@mui/icons-material/HomeWork'
 import AssignmentIcon from '@mui/icons-material/Assignment'
@@ -33,6 +35,7 @@ import HistoryIcon from '@mui/icons-material/History'
 import LogoutIcon from '@mui/icons-material/Logout'
 import AccountCircleIcon from '@mui/icons-material/AccountCircle'
 import { trpc } from '@/trpc/client'
+import { useColorMode } from '@/contexts/ColorModeContext'
 
 const DRAWER_WIDTH = 240
 
@@ -70,6 +73,7 @@ export default function CustomerLayout() {
   const location = useLocation()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const { mode, toggleColorMode } = useColorMode()
 
   const { data: dbUser } = trpc.users.me.useQuery()
   const role = dbUser?.role ?? 'customer'
@@ -160,6 +164,9 @@ export default function CustomerLayout() {
             <MenuIcon />
           </IconButton>
           <Box sx={{ flexGrow: 1 }} />
+          <IconButton onClick={toggleColorMode} size="small" sx={{ mr: 1 }} aria-label="Toggle dark mode">
+            {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
+          </IconButton>
           <IconButton onClick={handleAvatarClick} size="small">
             <Avatar
               src={user?.imageUrl}
