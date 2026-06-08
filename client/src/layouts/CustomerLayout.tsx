@@ -94,9 +94,12 @@ export default function CustomerLayout() {
   const drawer = (
     <Box>
       <Toolbar sx={{ px: 2 }}>
-        <Typography variant="h6" fontWeight={700} color="primary">
-          Cabin Care
-        </Typography>
+        <Box
+          component="img"
+          src={theme.palette.mode === 'dark' ? '/images/logo-dark.png' : '/images/logo-light.png'}
+          alt="Cabin Care"
+          sx={{ height: 40, width: 'auto' }}
+        />
       </Toolbar>
       <Divider />
       <List>
