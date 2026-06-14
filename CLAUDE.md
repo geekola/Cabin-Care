@@ -174,10 +174,12 @@ Cabin Care/
   01 Daily Logs/         Session handoff notes
   screenshots/           Brand assets (logo-light.png, logo-dark.png, favicon.png)
   client/                Vite + React frontend (deploys to Vercel)
+    public/images/       Logo and favicon served statically (logo-light.png, logo-dark.png, favicon.png)
     src/
       components/        Reusable UI components (properties/, orders/)
+      contexts/          ColorModeContext.tsx (dark mode, localStorage persistence)
       layouts/           CustomerLayout (sidebar + appbar)
-      lib/               theme.ts, shared utilities
+      lib/               theme.ts (createAppTheme), shared utilities
       pages/             DashboardPage, PropertiesPage, BookingsPage,
                          NewBookingPage, HistoryPage
       trpc/              tRPC client setup with Clerk auth token
@@ -185,7 +187,7 @@ Cabin Care/
   server/                Express + tRPC backend (deploys to Railway)
     prisma/              schema.prisma, migrations/, seed.ts
     src/
-      lib/               context.ts (Clerk auth), prisma.ts, trpc.ts
+      lib/               context.ts (Clerk auth), prisma.ts, trpc.ts, getDbUser.ts
       middleware/        clerkWebhook.ts
       routers/           index.ts, users, properties, checklists, bookings, assignments
       services/
@@ -204,4 +206,4 @@ Cabin Care/
 - **RepairItem UI** — ✅ Complete. Staff flags repairs on assignments; owner reviews and approves/declines.
 - **Monthly seasonal email** — ✅ Complete. POST `/api/cron/seasonal-email` (protected by `CRON_SECRET` header) sends branded seasonal tips to all active property owners via Resend. Static templates for Spring/Summer/Fall/Winter. Schedule via Railway cron: `0 9 1 * *` (1st of each month, 09:00 UTC). Requires `RESEND_API_KEY`, `CRON_SECRET`, and `APP_URL` in Railway environment variables.
 - **Staff invitation flow** — ✅ Complete. Admin invites staff by email + role via Clerk's invitation API (publicMetadata carries the role). Webhook reads the role on user.created. StaffPage shows active/inactive staff with activate/deactivate controls.
-- **Add Property UI** — PropertiesPage is missing a form to create a new property. Needs an "Add Property" button and form (propertyName, address, accessInstructions, lockboxCode, notes) wired to the existing `properties.create` tRPC mutation.
+- **Add Property UI** — ✅ Complete. PropertiesPage has Add/Edit dialog (PropertyForm) with propertyName, address, accessInstructions, lockboxCode, notes, wired to `properties.create`/`update`/`delete`.
