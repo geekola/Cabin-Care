@@ -12,12 +12,20 @@ export const staffRouter = router({
     })
   }),
 
+  // Admin: list all property owner (customer) accounts
+  listCustomers: protectedProcedure.query(async () => {
+    return prisma.user.findMany({
+      where: { role: 'customer' },
+      orderBy: [{ name: 'asc' }],
+    })
+  }),
+
   // Admin: invite a user by email with a specific role
   invite: protectedProcedure
     .input(
       z.object({
         email: z.string().email(),
-        role: z.enum(['staff', 'repair_tech', 'admin']),
+        role: z.enum(['customer', 'staff', 'repair_tech', 'admin']),
       }),
     )
     .mutation(async ({ input }) => {

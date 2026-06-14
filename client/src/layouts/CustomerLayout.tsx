@@ -31,6 +31,7 @@ import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn'
 import BuildIcon from '@mui/icons-material/Build'
 import EngineeringIcon from '@mui/icons-material/Engineering'
 import PeopleIcon from '@mui/icons-material/People'
+import PeopleAltIcon from '@mui/icons-material/PeopleAlt'
 import HistoryIcon from '@mui/icons-material/History'
 import LogoutIcon from '@mui/icons-material/Logout'
 import AccountCircleIcon from '@mui/icons-material/AccountCircle'
@@ -54,10 +55,13 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
   ],
   admin: [
     { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
+    { label: 'Properties', path: '/properties', icon: <HomeWorkIcon /> },
     { label: 'Bookings', path: '/bookings', icon: <AssignmentIcon /> },
     { label: 'Repairs', path: '/repairs', icon: <BuildIcon /> },
+    { label: 'History', path: '/history', icon: <HistoryIcon /> },
     { label: 'Work Orders', path: '/work-orders', icon: <EngineeringIcon /> },
     { label: 'Staff', path: '/staff', icon: <PeopleIcon /> },
+    { label: 'Customers', path: '/customers', icon: <PeopleAltIcon /> },
   ],
   repair_tech: [
     { label: 'My Work Orders', path: '/my-work-orders', icon: <EngineeringIcon /> },

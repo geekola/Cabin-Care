@@ -12,6 +12,7 @@ import AssignmentDetailPage from '@/pages/AssignmentDetailPage'
 import WorkOrdersPage from '@/pages/WorkOrdersPage'
 import MyWorkOrdersPage from '@/pages/MyWorkOrdersPage'
 import StaffPage from '@/pages/StaffPage'
+import CustomersPage from '@/pages/CustomersPage'
 
 function ProtectedRoutes() {
   return (
@@ -34,6 +35,7 @@ function ProtectedRoutes() {
             {/* Admin routes */}
             <Route path="/work-orders" element={<WorkOrdersPage />} />
             <Route path="/staff" element={<StaffPage />} />
+            <Route path="/customers" element={<CustomersPage />} />
 
             {/* Repair tech routes */}
             <Route path="/my-work-orders" element={<MyWorkOrdersPage />} />

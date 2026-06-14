@@ -78,7 +78,10 @@ export async function clerkWebhookHandler(req: Request, res: Response) {
     if (type === 'user.created') {
       const metaRole = data.public_metadata?.role
       const role =
-        metaRole === 'staff' || metaRole === 'repair_tech' || metaRole === 'admin'
+        metaRole === 'customer' ||
+        metaRole === 'staff' ||
+        metaRole === 'repair_tech' ||
+        metaRole === 'admin'
           ? metaRole
           : 'customer'
 

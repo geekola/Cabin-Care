@@ -1,20 +1,51 @@
 import { useUser } from '@clerk/clerk-react'
-import { Box, Card, CardContent, Grid, Typography } from '@mui/material'
+import { Box, Card, CardContent, Grid, Skeleton, Typography } from '@mui/material'
 import HomeWorkIcon from '@mui/icons-material/HomeWork'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import PendingIcon from '@mui/icons-material/Pending'
+import { trpc } from '@/trpc/client'
 
-const statCards = [
-  { label: 'Properties', value: '—', icon: <HomeWorkIcon fontSize="large" color="primary" /> },
-  { label: 'Active Orders', value: '—', icon: <AssignmentIcon fontSize="large" color="warning" /> },
-  { label: 'Completed', value: '—', icon: <CheckCircleIcon fontSize="large" color="success" /> },
-  { label: 'Pending Approval', value: '—', icon: <PendingIcon fontSize="large" color="error" /> },
-]
+const ACTIVE_BOOKING_STATUSES = new Set(['pending', 'confirmed', 'assigned', 'in_progress'])
 
 export default function DashboardPage() {
   const { user } = useUser()
   const firstName = user?.firstName ?? 'there'
+
+  const { data: properties, isLoading: propertiesLoading } = trpc.properties.list.useQuery()
+  const { data: bookings, isLoading: bookingsLoading } = trpc.bookings.list.useQuery()
+  const { data: repairItems, isLoading: repairsLoading } = trpc.repairItems.listForOwner.useQuery()
+
+  const activeOrders = bookings?.filter((b) => ACTIVE_BOOKING_STATUSES.has(b.status)).length ?? 0
+  const completedOrders = bookings?.filter((b) => b.status === 'completed').length ?? 0
+  const pendingApprovals = repairItems?.filter((r) => r.status === 'pending').length ?? 0
+
+  const statCards = [
+    {
+      label: 'Properties',
+      value: properties?.length ?? 0,
+      loading: propertiesLoading,
+      icon: <HomeWorkIcon fontSize="large" color="primary" />,
+    },
+    {
+      label: 'Active Orders',
+      value: activeOrders,
+      loading: bookingsLoading,
+      icon: <AssignmentIcon fontSize="large" color="warning" />,
+    },
+    {
+      label: 'Completed',
+      value: completedOrders,
+      loading: bookingsLoading,
+      icon: <CheckCircleIcon fontSize="large" color="success" />,
+    },
+    {
+      label: 'Pending Approval',
+      value: pendingApprovals,
+      loading: repairsLoading,
+      icon: <PendingIcon fontSize="large" color="error" />,
+    },
+  ]
 
   return (
     <Box>
@@ -32,9 +63,13 @@ export default function DashboardPage() {
               <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 {card.icon}
                 <Box>
-                  <Typography variant="h4" fontWeight={700}>
-                    {card.value}
-                  </Typography>
+                  {card.loading ? (
+                    <Skeleton variant="text" width={32} height={40} />
+                  ) : (
+                    <Typography variant="h4" fontWeight={700}>
+                      {card.value}
+                    </Typography>
+                  )}
                   <Typography variant="body2" color="text.secondary">
                     {card.label}
                   </Typography>
