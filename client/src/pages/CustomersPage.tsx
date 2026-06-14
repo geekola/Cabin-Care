@@ -18,9 +18,18 @@ import {
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt'
 import PersonAddIcon from '@mui/icons-material/PersonAdd'
 import { trpc } from '@/trpc/client'
+import ListToolbar from '@/components/common/ListToolbar'
+
+const STATUS_FILTER_OPTIONS = [
+  { value: 'all', label: 'All Statuses' },
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+]
 
 export default function CustomersPage() {
   const utils = trpc.useUtils()
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
   const { data: customers, isLoading, error } = trpc.staff.listCustomers.useQuery()
   const invite = trpc.staff.invite.useMutation({
     onSuccess: () => {
@@ -64,8 +73,15 @@ export default function CustomersPage() {
     return <Alert severity="error">Failed to load property owners.</Alert>
   }
 
-  const activeCustomers = customers?.filter((c) => c.status === 'active') ?? []
-  const inactiveCustomers = customers?.filter((c) => c.status !== 'active') ?? []
+  const query = search.trim().toLowerCase()
+  const filteredCustomers = (customers ?? []).filter((c) => {
+    if (statusFilter !== 'all' && c.status !== statusFilter) return false
+    if (!query) return true
+    return c.name.toLowerCase().includes(query) || c.email.toLowerCase().includes(query)
+  })
+
+  const activeCustomers = filteredCustomers.filter((c) => c.status === 'active')
+  const inactiveCustomers = filteredCustomers.filter((c) => c.status !== 'active')
 
   return (
     <Box>
@@ -93,7 +109,7 @@ export default function CustomersPage() {
         </Alert>
       )}
 
-      {activeCustomers.length === 0 && inactiveCustomers.length === 0 ? (
+      {customers?.length === 0 ? (
         <Box
           sx={{
             border: 2,
@@ -121,6 +137,40 @@ export default function CustomersPage() {
         </Box>
       ) : (
         <>
+          <ListToolbar
+            searchValue={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Search by name or email…"
+            filters={[
+              {
+                label: 'Status',
+                value: statusFilter,
+                onChange: setStatusFilter,
+                options: STATUS_FILTER_OPTIONS,
+              },
+            ]}
+          />
+
+          {activeCustomers.length === 0 && inactiveCustomers.length === 0 && (
+            <Box
+              sx={{
+                border: 2,
+                borderColor: 'divider',
+                borderStyle: 'dashed',
+                borderRadius: 2,
+                p: 6,
+                textAlign: 'center',
+              }}
+            >
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No property owners match your filters
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Try a different search term or status.
+              </Typography>
+            </Box>
+          )}
+
           {activeCustomers.length > 0 && (
             <Box mb={4}>
               <Typography variant="subtitle1" fontWeight={700} mb={2}>

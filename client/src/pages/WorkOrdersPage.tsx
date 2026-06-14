@@ -21,6 +21,7 @@ import EngineeringIcon from '@mui/icons-material/Engineering'
 import AddIcon from '@mui/icons-material/Add'
 import { useState } from 'react'
 import { trpc } from '@/trpc/client'
+import ListToolbar from '@/components/common/ListToolbar'
 
 const STATUS_COLORS: Record<string, 'default' | 'warning' | 'info' | 'success'> = {
   pending: 'warning',
@@ -29,8 +30,18 @@ const STATUS_COLORS: Record<string, 'default' | 'warning' | 'info' | 'success'> 
   completed: 'success',
 }
 
+const STATUS_FILTER_OPTIONS = [
+  { value: 'all', label: 'All Statuses' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'scheduled', label: 'Scheduled' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'completed', label: 'Completed' },
+]
+
 export default function WorkOrdersPage() {
   const utils = trpc.useUtils()
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
   const { data: workOrders, isLoading, error } = trpc.workOrders.list.useQuery()
   const { data: repairItems } = trpc.repairItems.listForOwner.useQuery()
   const { data: techs } = trpc.workOrders.listRepairTechs.useQuery()
@@ -70,6 +81,18 @@ export default function WorkOrdersPage() {
   const approvedWithoutWorkOrder = (repairItems ?? []).filter(
     (ri) => ri.customerApproved && !ri.workOrder,
   )
+
+  const query = search.trim().toLowerCase()
+  const filteredWorkOrders = (workOrders ?? []).filter((wo) => {
+    if (statusFilter !== 'all' && wo.status !== statusFilter) return false
+    if (!query) return true
+    const property = wo.repairItem.assignment.booking.property
+    return (
+      wo.repairItem.title.toLowerCase().includes(query) ||
+      property.propertyName.toLowerCase().includes(query) ||
+      property.address.toLowerCase().includes(query)
+    )
+  })
 
   return (
     <Box>
@@ -129,8 +152,42 @@ export default function WorkOrdersPage() {
           </Typography>
         </Box>
       ) : (
-        <Box display="flex" flexDirection="column" gap={2}>
-          {workOrders?.map((wo) => {
+        <>
+          <ListToolbar
+            searchValue={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Search by title, property name, or address…"
+            filters={[
+              {
+                label: 'Status',
+                value: statusFilter,
+                onChange: setStatusFilter,
+                options: STATUS_FILTER_OPTIONS,
+              },
+            ]}
+          />
+
+          {filteredWorkOrders.length === 0 ? (
+            <Box
+              sx={{
+                border: 2,
+                borderColor: 'divider',
+                borderStyle: 'dashed',
+                borderRadius: 2,
+                p: 6,
+                textAlign: 'center',
+              }}
+            >
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No work orders match your filters
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Try a different search term or status.
+              </Typography>
+            </Box>
+          ) : (
+            <Box display="flex" flexDirection="column" gap={2}>
+              {filteredWorkOrders.map((wo) => {
             const property = wo.repairItem.assignment.booking.property
             const assignedTech = techs?.find((t) => t.id === wo.assignedTo)
             return (
@@ -210,8 +267,10 @@ export default function WorkOrdersPage() {
                 </CardContent>
               </Card>
             )
-          })}
-        </Box>
+              })}
+            </Box>
+          )}
+        </>
       )}
 
       {/* Create work order dialog */}

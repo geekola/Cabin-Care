@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Alert,
   Box,
@@ -13,6 +14,7 @@ import CheckIcon from '@mui/icons-material/Check'
 import CloseIcon from '@mui/icons-material/Close'
 import BuildIcon from '@mui/icons-material/Build'
 import { trpc } from '@/trpc/client'
+import ListToolbar from '@/components/common/ListToolbar'
 
 const STATUS_COLORS: Record<string, 'default' | 'warning' | 'success' | 'error'> = {
   pending: 'warning',
@@ -21,8 +23,18 @@ const STATUS_COLORS: Record<string, 'default' | 'warning' | 'success' | 'error'>
   completed: 'success',
 }
 
+const STATUS_FILTER_OPTIONS = [
+  { value: 'all', label: 'All Statuses' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'declined', label: 'Declined' },
+  { value: 'completed', label: 'Completed' },
+]
+
 export default function RepairApprovalsPage() {
   const utils = trpc.useUtils()
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
   const { data: repairItems, isLoading, error } = trpc.repairItems.listForOwner.useQuery()
   const approve = trpc.repairItems.approve.useMutation({
     onSuccess: () => utils.repairItems.listForOwner.invalidate(),
@@ -42,8 +54,19 @@ export default function RepairApprovalsPage() {
     return <Alert severity="error">Failed to load repair items. Please try again.</Alert>
   }
 
-  const pending = repairItems?.filter((r) => r.status === 'pending') ?? []
-  const resolved = repairItems?.filter((r) => r.status !== 'pending') ?? []
+  const query = search.trim().toLowerCase()
+  const filteredItems = (repairItems ?? []).filter((r) => {
+    if (statusFilter !== 'all' && r.status !== statusFilter) return false
+    if (!query) return true
+    return (
+      r.title.toLowerCase().includes(query) ||
+      r.assignment.booking.property.propertyName.toLowerCase().includes(query) ||
+      r.assignment.booking.property.address.toLowerCase().includes(query)
+    )
+  })
+
+  const pending = filteredItems.filter((r) => r.status === 'pending')
+  const resolved = filteredItems.filter((r) => r.status !== 'pending')
 
   return (
     <Box>
@@ -74,6 +97,40 @@ export default function RepairApprovalsPage() {
         </Box>
       ) : (
         <>
+          <ListToolbar
+            searchValue={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Search by title, property name, or address…"
+            filters={[
+              {
+                label: 'Status',
+                value: statusFilter,
+                onChange: setStatusFilter,
+                options: STATUS_FILTER_OPTIONS,
+              },
+            ]}
+          />
+
+          {filteredItems.length === 0 && (
+            <Box
+              sx={{
+                border: 2,
+                borderColor: 'divider',
+                borderStyle: 'dashed',
+                borderRadius: 2,
+                p: 6,
+                textAlign: 'center',
+              }}
+            >
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No repair items match your filters
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Try a different search term or status.
+              </Typography>
+            </Box>
+          )}
+
           {/* Pending approval */}
           {pending.length > 0 && (
             <Box mb={4}>

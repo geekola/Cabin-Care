@@ -22,6 +22,7 @@ import {
 import PeopleIcon from '@mui/icons-material/People'
 import PersonAddIcon from '@mui/icons-material/PersonAdd'
 import { trpc } from '@/trpc/client'
+import ListToolbar from '@/components/common/ListToolbar'
 
 const ROLE_COLORS: Record<string, 'default' | 'primary' | 'secondary' | 'warning'> = {
   staff: 'primary',
@@ -35,8 +36,17 @@ const ROLE_LABELS: Record<string, string> = {
   admin: 'Admin',
 }
 
+const ROLE_FILTER_OPTIONS = [
+  { value: 'all', label: 'All Roles' },
+  { value: 'staff', label: 'Inspector (Staff)' },
+  { value: 'repair_tech', label: 'Repair Tech' },
+  { value: 'admin', label: 'Admin' },
+]
+
 export default function StaffPage() {
   const utils = trpc.useUtils()
+  const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState('all')
   const { data: staffList, isLoading, error } = trpc.staff.list.useQuery()
   const invite = trpc.staff.invite.useMutation({
     onSuccess: () => {
@@ -83,8 +93,15 @@ export default function StaffPage() {
     return <Alert severity="error">Failed to load staff list.</Alert>
   }
 
-  const activeStaff = staffList?.filter((s) => s.status === 'active') ?? []
-  const inactiveStaff = staffList?.filter((s) => s.status !== 'active') ?? []
+  const query = search.trim().toLowerCase()
+  const filteredStaff = (staffList ?? []).filter((s) => {
+    if (roleFilter !== 'all' && s.role !== roleFilter) return false
+    if (!query) return true
+    return s.name.toLowerCase().includes(query) || s.email.toLowerCase().includes(query)
+  })
+
+  const activeStaff = filteredStaff.filter((s) => s.status === 'active')
+  const inactiveStaff = filteredStaff.filter((s) => s.status !== 'active')
 
   return (
     <Box>
@@ -113,7 +130,7 @@ export default function StaffPage() {
       )}
 
       {/* Active staff */}
-      {activeStaff.length === 0 && inactiveStaff.length === 0 ? (
+      {staffList?.length === 0 ? (
         <Box
           sx={{
             border: 2,
@@ -141,6 +158,40 @@ export default function StaffPage() {
         </Box>
       ) : (
         <>
+          <ListToolbar
+            searchValue={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Search by name or email…"
+            filters={[
+              {
+                label: 'Role',
+                value: roleFilter,
+                onChange: setRoleFilter,
+                options: ROLE_FILTER_OPTIONS,
+              },
+            ]}
+          />
+
+          {activeStaff.length === 0 && inactiveStaff.length === 0 && (
+            <Box
+              sx={{
+                border: 2,
+                borderColor: 'divider',
+                borderStyle: 'dashed',
+                borderRadius: 2,
+                p: 6,
+                textAlign: 'center',
+              }}
+            >
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No staff members match your filters
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Try a different search term or role.
+              </Typography>
+            </Box>
+          )}
+
           {activeStaff.length > 0 && (
             <Box mb={4}>
               <Typography variant="subtitle1" fontWeight={700} mb={2}>

@@ -16,6 +16,7 @@ import AddIcon from '@mui/icons-material/Add'
 import { trpc } from '@/trpc/client'
 import PropertyCard from '@/components/properties/PropertyCard'
 import PropertyForm, { type PropertyFormValues } from '@/components/properties/PropertyForm'
+import ListToolbar from '@/components/common/ListToolbar'
 
 type Property = {
   id: string
@@ -30,6 +31,7 @@ export default function PropertiesPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Property | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
 
   const utils = trpc.useUtils()
   const { data: properties, isLoading, error } = trpc.properties.list.useQuery()
@@ -83,6 +85,15 @@ export default function PropertiesPage() {
     return <Alert severity="error">Failed to load properties. Please try again.</Alert>
   }
 
+  const query = search.trim().toLowerCase()
+  const filteredProperties = (properties ?? []).filter((property) => {
+    if (!query) return true
+    return (
+      property.propertyName.toLowerCase().includes(query) ||
+      property.address.toLowerCase().includes(query)
+    )
+  })
+
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
@@ -116,17 +127,45 @@ export default function PropertiesPage() {
           </Button>
         </Box>
       ) : (
-        <Grid container spacing={2}>
-          {properties?.map((property) => (
-            <Grid item xs={12} sm={6} lg={4} key={property.id}>
-              <PropertyCard
-                property={property}
-                onEdit={handleOpenEdit}
-                onDelete={(id) => setDeleteId(id)}
-              />
+        <>
+          <ListToolbar
+            searchValue={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Search by name or address…"
+          />
+
+          {filteredProperties.length === 0 ? (
+            <Box
+              sx={{
+                border: 2,
+                borderColor: 'divider',
+                borderStyle: 'dashed',
+                borderRadius: 2,
+                p: 6,
+                textAlign: 'center',
+              }}
+            >
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No properties match your search
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Try a different name or address.
+              </Typography>
+            </Box>
+          ) : (
+            <Grid container spacing={2}>
+              {filteredProperties.map((property) => (
+                <Grid item xs={12} sm={6} lg={4} key={property.id}>
+                  <PropertyCard
+                    property={property}
+                    onEdit={handleOpenEdit}
+                    onDelete={(id) => setDeleteId(id)}
+                  />
+                </Grid>
+              ))}
             </Grid>
-          ))}
-        </Grid>
+          )}
+        </>
       )}
 
       {/* Add / Edit dialog */}
