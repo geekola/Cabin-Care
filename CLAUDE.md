@@ -200,6 +200,7 @@ Cabin Care/
 ## Deferred Tasks
 
 - **Clerk production instance** — Create a Clerk production instance when going live. Add the Vercel domain to Allowed Origins. Update `VITE_CLERK_PUBLISHABLE_KEY` (Vercel) and `CLERK_SECRET_KEY` + `CLERK_WEBHOOK_SECRET` (Railway) with production keys.
+- **Admin MFA enforcement** — Require MFA (authenticator app) for `admin` role accounts via Clerk before going live. Not yet configured.
 - **Naming refactor** — ✅ Complete. `Order` → `Booking`, `Job` → `Assignment` across schema, routers, pages, and components.
 - **Subscription billing (Stripe)** — Property owners pay a monthly subscription for platform access. The first property owner account is exempt from the subscription requirement (used for testing). Implement in the final phase: Stripe subscription creation, webhook handling for payment events, and gating access based on subscription status. The existing `PaymentStatus` enum may need to be revised or replaced to support this model.
 - **WorkOrder UI** — ✅ Complete. Admin creates work orders from approved repairs, assigns repair_tech, tech updates status.
@@ -210,7 +211,9 @@ Cabin Care/
 
 ---
 
-# Cabin Care - Clerk Authentication Implementation
+# Cabin Care - Authentication (Clerk)
+
+**Status:** Core auth + invitations are live (originally planned as Phases 1 & 3). Org-based onboarding (Phase 2) and the MFA/security dashboard (Phase 4) were never built — the simpler model below is what's actually running and fits current scale. Org-based onboarding has been moved to Future Enhancements.
 
 ## Goal
 
@@ -219,13 +222,12 @@ Use Clerk as the authentication and user management platform for Cabin Care to e
 * Authentication
 * Session management
 * Password resets
-* MFA
 * User invitations
 * User profile management
 
 ---
 
-## V1 Authentication Strategy
+## Authentication Strategy (live)
 
 ### Enabled
 
@@ -243,71 +245,38 @@ Use Clerk as the authentication and user management platform for Cabin Care to e
 
 ---
 
-## User Roles
+## User Roles (live)
 
 ```typescript
-type UserRole =
-  | "ADMIN"
-  | "OWNER"
-  | "PROPERTY_MANAGER"
-  | "INSPECTOR"
-  | "VENDOR";
+type Role = "customer" | "staff" | "admin" | "repair_tech"
 ```
 
-Store roles using Clerk metadata.
+This is the Prisma `Role` enum (`server/prisma/schema.prisma`) — single source of truth, matches the Architecture Overview roles table above.
 
-```typescript
-{
-  role: "OWNER",
-  organizationId: "...",
-  onboardingComplete: true
-}
-```
+Role is set via Clerk `publicMetadata.role` at invite time, then synced to the `User.role` column by the `user.created` webhook (`server/src/middleware/clerkWebhook.ts`). Defaults to `customer` if no role metadata is present.
 
 ---
 
-## Onboarding Flow
+## Invitation-Based User Management (live)
+
+Admins can invite:
+
+* Property Owners (`customer`) — via Customers page
+* Inspectors (`staff`) — via Staff page
+* Repair Techs (`repair_tech`) — via Staff page
+
+Workflow (implemented via `staff.invite` mutation):
 
 ```text
-Sign Up
+Admin Invites User (email + role)
 ↓
-Verify Email
+Clerk sends email invitation (publicMetadata.role set)
 ↓
-Select Account Type
+User creates account
 ↓
-Create Organization
+Webhook (user.created) reads role, creates User row
 ↓
-Create First Property
-↓
-Invite Team Members
-↓
-Dashboard
-```
-
-Track onboarding progress in Clerk metadata.
-
----
-
-## Invitation-Based User Management
-
-Property Owners can invite:
-
-* Property Managers
-* Inspectors
-* Vendors
-
-Workflow:
-
-```text
-Owner Invites User
-↓
-Email Invitation
-↓
-User Creates Account
-↓
-Role Assigned Automatically
-↓
-Access Granted
+Access granted per role
 ```
 
 Benefits:
@@ -318,64 +287,46 @@ Benefits:
 
 ---
 
-## Route Protection
+## Route Protection (live)
 
-Protect all application routes using Clerk middleware.
-
-```text
-/dashboard/*
-/properties/*
-/inspections/*
-/maintenance/*
-/admin/*
-```
-
-Unauthenticated users are redirected to:
-
-```text
-/sign-in
-```
+`client/src/App.tsx` wraps all routes: `<SignedIn>` renders the route tree inside `CustomerLayout`, `<SignedOut>` renders `<RedirectToSignIn />` (Clerk's hosted sign-in). Role-based UI visibility (which nav items/pages a user sees) is handled per-role in `CustomerLayout` (`NAV_BY_ROLE`); server-side authorization is enforced per-procedure in the tRPC routers via `requireDbUser` + role checks.
 
 ---
 
-## Role-Based Access
+## Role-Based Access (live)
 
-### Owner
+### customer (Property Owner)
 
 * Properties
-* Reports
-* Maintenance Requests
-* Vendors
-* Billing
+* Bookings
+* Repair approvals
+* History/reports
 
-### Property Manager
+### staff (Inspector)
 
-* Assigned Properties
-* Reports
-* Maintenance Coordination
-
-### Inspector
-
-* Assigned Inspections
+* My Assignments
 * Checklists
-* Photo Uploads
-* Reports
+* Photo uploads
+* Flag repair items
 
-### Vendor
+### repair_tech
 
-* Assigned Work Orders
-* Maintenance Tasks
-* Completion Photos
+* My Work Orders
+* Update work order status
+* Completion photos
 
-### Admin
+### admin
 
-* Full Platform Access
+* Work Orders (create/assign)
+* Staff management
+* Customers (property owners) management
+* Full platform access
 
 ---
 
 ## User Profile Fields
 
-### Clerk Profile
+### Clerk Profile (live)
 
 ```typescript
 {
@@ -383,11 +334,13 @@ Unauthenticated users are redirected to:
   lastName,
   email,
   phone,
-  role
+  role  // via publicMetadata
 }
 ```
 
-### Cabin Care Profile
+### Cabin Care Profile (not yet implemented)
+
+Planned extension fields — not yet in the `User` model:
 
 ```typescript
 {
@@ -405,68 +358,60 @@ Use Clerk's profile management UI whenever possible.
 
 ## Security
 
-### All Users
+### All Users (live, via Clerk defaults)
 
-* Verified Email Required
-* Secure Sessions
-* Device Tracking
+* Verified email required
+* Secure sessions
+* Device tracking
 
-### Admin Accounts
+### Admin Accounts (pre-launch checklist — not yet configured)
 
-Require:
+Require before going live:
 
 * MFA
-* Authenticator App
-* Backup Codes
+* Authenticator app
+* Backup codes
+
+See "Admin MFA enforcement" in Deferred Tasks.
 
 ---
 
-## Database Design
+## Database Design (live)
 
-Clerk remains the source of truth for authentication.
+Clerk remains the source of truth for authentication. App DB mirrors the minimum needed for app logic:
 
 ```text
 users
-├─ clerk_user_id
-├─ role
-
-organizations
-├─ owner_clerk_user_id
-
-properties
-├─ organization_id
-
-inspections
-├─ inspector_clerk_user_id
-
-work_orders
-├─ vendor_clerk_user_id
+├─ clerkId   (unique, links to Clerk)
+├─ role      (customer | staff | admin | repair_tech)
+├─ status    (active | inactive | suspended)
 ```
+
+Properties, bookings, assignments, etc. reference `User.id` directly — no `organizationId` (single-tenant).
 
 Never store passwords locally.
 
 ---
 
-## Future Enhancements
+## Future Enhancements (not currently planned — revisit if/when needed)
+
+### Multi-Tenant Organizations + Onboarding Wizard
+
+If Cabin Care ever needs to support multiple management companies (each managing their own set of cabins), revisit the original Phase 2 plan:
+
+* Add an `organizations` table; scope properties/users to an org
+* Onboarding wizard: Sign Up → Verify Email → Select Account Type → Create Organization → Create First Property → Invite Team
+* Expand roles to `OWNER` / `PROPERTY_MANAGER` per-org if needed
+
+Not needed at current scale (single company managing all cabins).
 
 ### Passkeys
 
 Ideal for:
 
 * Inspectors
-* Property Managers
+* Repair Techs
 * Internal Staff
-
-### Organizations
-
-Support:
-
-```text
-Management Company
-├─ Cabin A
-├─ Cabin B
-├─ Cabin C
-```
 
 ### Enterprise SSO
 
@@ -475,78 +420,40 @@ Support:
 * Microsoft Entra ID
 * Google Workspace
 
-For larger management companies and resorts.
+For larger management companies and resorts — only relevant alongside multi-tenant organizations above.
 
 ---
 
-## Claude Coworker Implementation Phases
+## Implementation Status
 
-### Phase 1 - Core Authentication
+### Phase 1 - Core Authentication — ✅ Complete
 
-* Install Clerk
-* Configure middleware
-* Configure protected routes
-* Sign In / Sign Up
-* Google OAuth
-* Email Verification
+* Clerk installed, middleware configured
+* Protected routes (`SignedIn`/`SignedOut` in `App.tsx`)
+* Sign In / Sign Up (Clerk hosted UI)
+* Google OAuth, Email Verification
 
-```bash
-git add .
-git commit -m "feat(auth): configure Clerk authentication"
-```
+### Phase 2 - Roles & Onboarding — Superseded
 
----
+* Simple role model (`customer/staff/admin/repair_tech`) implemented directly via Prisma enum + webhook — no onboarding wizard or organizations needed
+* Org-based onboarding wizard moved to Future Enhancements
 
-### Phase 2 - Roles & Onboarding
+### Phase 3 - Invitations — ✅ Complete
 
-* User roles
-* Metadata
-* Onboarding wizard
-* Organization creation
+* Admin-driven invitations for property owners, inspectors, repair techs via `staff.invite`
+* Automatic role assignment via `publicMetadata.role` + webhook
 
-```bash
-git add .
-git commit -m "feat(auth): implement roles and onboarding"
-```
+### Phase 4 - Security — Pending (pre-launch)
+
+* Admin MFA — not yet configured (see Deferred Tasks)
+* Session auditing / user management dashboard — not built, no current need beyond StaffPage/CustomersPage active/inactive controls
 
 ---
 
-### Phase 3 - Invitations
+## Outcome (achieved)
 
-* Team invitations
-* Vendor invitations
-* Inspector invitations
-* Automatic role assignment
-
-```bash
-git add .
-git commit -m "feat(auth): implement invitation workflow"
-```
-
----
-
-### Phase 4 - Security
-
-* MFA
-* Admin controls
-* Session auditing
-* User management dashboard
-
-```bash
-git add .
-git commit -m "feat(auth): add MFA and security controls"
-```
-
----
-
-## Expected Outcome
-
-* Secure authentication
-* Google login
-* Passwordless login
-* Role-based permissions
-* Invitation-driven onboarding
-* Multi-property scalability
-* Reduced authentication maintenance
-
-Estimated reduction in custom authentication code: **80-90%**
+* Secure authentication (Clerk-managed)
+* Google login + passwordless login
+* Role-based permissions (4 roles)
+* Invitation-driven user creation
+* Reduced authentication maintenance vs. custom build
