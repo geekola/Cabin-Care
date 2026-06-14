@@ -207,3 +207,346 @@ Cabin Care/
 - **Monthly seasonal email** — ✅ Complete. POST `/api/cron/seasonal-email` (protected by `CRON_SECRET` header) sends branded seasonal tips to all active property owners via Resend. Static templates for Spring/Summer/Fall/Winter. Schedule via Railway cron: `0 9 1 * *` (1st of each month, 09:00 UTC). Requires `RESEND_API_KEY`, `CRON_SECRET`, and `APP_URL` in Railway environment variables.
 - **Staff invitation flow** — ✅ Complete. Admin invites staff by email + role via Clerk's invitation API (publicMetadata carries the role). Webhook reads the role on user.created. StaffPage shows active/inactive staff with activate/deactivate controls.
 - **Add Property UI** — ✅ Complete. PropertiesPage has Add/Edit dialog (PropertyForm) with propertyName, address, accessInstructions, lockboxCode, notes, wired to `properties.create`/`update`/`delete`.
+
+---
+
+# Cabin Care - Clerk Authentication Implementation
+
+## Goal
+
+Use Clerk as the authentication and user management platform for Cabin Care to eliminate custom development of:
+
+* Authentication
+* Session management
+* Password resets
+* MFA
+* User invitations
+* User profile management
+
+---
+
+## V1 Authentication Strategy
+
+### Enabled
+
+* Email + Password
+* Email Verification
+* Email OTP (Passwordless Login)
+* Google OAuth
+
+### Disabled (Future Releases)
+
+* SMS Login
+* Passkeys
+* Enterprise SSO
+* Social Providers Beyond Google
+
+---
+
+## User Roles
+
+```typescript
+type UserRole =
+  | "ADMIN"
+  | "OWNER"
+  | "PROPERTY_MANAGER"
+  | "INSPECTOR"
+  | "VENDOR";
+```
+
+Store roles using Clerk metadata.
+
+```typescript
+{
+  role: "OWNER",
+  organizationId: "...",
+  onboardingComplete: true
+}
+```
+
+---
+
+## Onboarding Flow
+
+```text
+Sign Up
+↓
+Verify Email
+↓
+Select Account Type
+↓
+Create Organization
+↓
+Create First Property
+↓
+Invite Team Members
+↓
+Dashboard
+```
+
+Track onboarding progress in Clerk metadata.
+
+---
+
+## Invitation-Based User Management
+
+Property Owners can invite:
+
+* Property Managers
+* Inspectors
+* Vendors
+
+Workflow:
+
+```text
+Owner Invites User
+↓
+Email Invitation
+↓
+User Creates Account
+↓
+Role Assigned Automatically
+↓
+Access Granted
+```
+
+Benefits:
+
+* No manual user creation
+* Faster onboarding
+* Cleaner permissions management
+
+---
+
+## Route Protection
+
+Protect all application routes using Clerk middleware.
+
+```text
+/dashboard/*
+/properties/*
+/inspections/*
+/maintenance/*
+/admin/*
+```
+
+Unauthenticated users are redirected to:
+
+```text
+/sign-in
+```
+
+---
+
+## Role-Based Access
+
+### Owner
+
+* Properties
+* Reports
+* Maintenance Requests
+* Vendors
+* Billing
+
+### Property Manager
+
+* Assigned Properties
+* Reports
+* Maintenance Coordination
+
+### Inspector
+
+* Assigned Inspections
+* Checklists
+* Photo Uploads
+* Reports
+
+### Vendor
+
+* Assigned Work Orders
+* Maintenance Tasks
+* Completion Photos
+
+### Admin
+
+* Full Platform Access
+
+---
+
+## User Profile Fields
+
+### Clerk Profile
+
+```typescript
+{
+  firstName,
+  lastName,
+  email,
+  phone,
+  role
+}
+```
+
+### Cabin Care Profile
+
+```typescript
+{
+  companyName,
+  vendorLicense,
+  serviceArea,
+  certifications,
+  emergencyContact
+}
+```
+
+Use Clerk's profile management UI whenever possible.
+
+---
+
+## Security
+
+### All Users
+
+* Verified Email Required
+* Secure Sessions
+* Device Tracking
+
+### Admin Accounts
+
+Require:
+
+* MFA
+* Authenticator App
+* Backup Codes
+
+---
+
+## Database Design
+
+Clerk remains the source of truth for authentication.
+
+```text
+users
+├─ clerk_user_id
+├─ role
+
+organizations
+├─ owner_clerk_user_id
+
+properties
+├─ organization_id
+
+inspections
+├─ inspector_clerk_user_id
+
+work_orders
+├─ vendor_clerk_user_id
+```
+
+Never store passwords locally.
+
+---
+
+## Future Enhancements
+
+### Passkeys
+
+Ideal for:
+
+* Inspectors
+* Property Managers
+* Internal Staff
+
+### Organizations
+
+Support:
+
+```text
+Management Company
+├─ Cabin A
+├─ Cabin B
+├─ Cabin C
+```
+
+### Enterprise SSO
+
+Support:
+
+* Microsoft Entra ID
+* Google Workspace
+
+For larger management companies and resorts.
+
+---
+
+## Claude Coworker Implementation Phases
+
+### Phase 1 - Core Authentication
+
+* Install Clerk
+* Configure middleware
+* Configure protected routes
+* Sign In / Sign Up
+* Google OAuth
+* Email Verification
+
+```bash
+git add .
+git commit -m "feat(auth): configure Clerk authentication"
+```
+
+---
+
+### Phase 2 - Roles & Onboarding
+
+* User roles
+* Metadata
+* Onboarding wizard
+* Organization creation
+
+```bash
+git add .
+git commit -m "feat(auth): implement roles and onboarding"
+```
+
+---
+
+### Phase 3 - Invitations
+
+* Team invitations
+* Vendor invitations
+* Inspector invitations
+* Automatic role assignment
+
+```bash
+git add .
+git commit -m "feat(auth): implement invitation workflow"
+```
+
+---
+
+### Phase 4 - Security
+
+* MFA
+* Admin controls
+* Session auditing
+* User management dashboard
+
+```bash
+git add .
+git commit -m "feat(auth): add MFA and security controls"
+```
+
+---
+
+## Expected Outcome
+
+* Secure authentication
+* Google login
+* Passwordless login
+* Role-based permissions
+* Invitation-driven onboarding
+* Multi-property scalability
+* Reduced authentication maintenance
+
+Estimated reduction in custom authentication code: **80-90%**

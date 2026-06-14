@@ -239,7 +239,7 @@ export default function CustomerLayout() {
           p: 3,
           minWidth: 0,
           minHeight: '100vh',
-          bgcolor: 'grey.50',
+          bgcolor: 'background.default',
         }}
       >
         <Toolbar />

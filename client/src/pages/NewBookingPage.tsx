@@ -25,6 +25,7 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
+import { alpha } from '@mui/material/styles'
 import { trpc } from '@/trpc/client'
 
 const STEPS = ['Select Inspections', 'Choose Property', 'Pick Dates', 'Review & Confirm']
@@ -156,7 +157,16 @@ export default function NewBookingPage() {
             </Grid>
           )}
           {selectedChecklistIds.length > 0 && (
-            <Box mt={2} p={2} bgcolor="primary.50" borderRadius={1} border={1} borderColor="primary.200">
+            <Box
+              mt={2}
+              p={2}
+              borderRadius={1}
+              border={1}
+              sx={{
+                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
+              }}
+            >
               <Typography fontWeight={600}>
                 {selectedChecklistIds.length} inspection{selectedChecklistIds.length > 1 ? 's' : ''} selected
               </Typography>
